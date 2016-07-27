@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wshadow -Wno-type-limits -g3 -O0 -Wpointer-arith -fvisibility=hidden
 
-SOURCES = main.c
+SOURCES = main.c matrix.c
 OBJECTS=$(SOURCES:.c=.o)
 
 EXECUTABLE = matrix_multiply mm 

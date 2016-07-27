@@ -3,15 +3,10 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <limits.h>
-#include <libgen.h>
 #include <sys/stat.h>
 
-typedef struct
-{
-   unsigned int lines;
-   unsigned int columns;
-   int *data;
-} Matrix;
+#include "matrix.h"
+
 
 /* Helper function which checks if path exists and
  * resolves realpath.
@@ -34,76 +29,27 @@ _realpath_get(const char *input_path)
    return ret;
 }
 
-static void
-_file_to_array_read(const char *filename)
+
+
+
+void
+matrix_transponse(Matrix *mt)
 {
-   if (!filename) return;
-   int n = 0, m = 0, i = 0, j = 0, res;
-   FILE *f = fopen(filename, "r");
-   long long *matr = NULL;
-
-   if (!f)
+   if (!mt) return;
+   long long *m_new = malloc(mt->lines * mt->columns * sizeof(long long));
+   size_t i, j;
+   for (i = 0; i < mt->lines; i++)
      {
-        printf("Can not open file: \"%s\".\n", filename);
-        return;
-     }
-
-   res = fscanf(f, "%d %d ", &n, &m);
-   if (res != 2)
-     {
-        goto end;
-     }
-
-   printf("%d %d %d\n", res, n, m);
-   matr = malloc(n * m * sizeof(long long));
-   for (i = 0; i < n; i++)
-     {
-#if 0
-        char *str = NULL;
-        size_t n = 0;
-        getline(&str, &n, f);
-        printf(":%s", str);
-        free(str);
-        str = NULL;
-#endif
-        for (j = 0; j < m; j++)
+        for (j = 0; j < mt->columns; j++)
           {
-             int k;
-             res = fscanf(f, "%d", &k);
-             if (res != 1) goto end;
-             *(matr + m * i +j) = k;
+             m_new[j * mt->lines + i] = mt->data[i * mt->columns + j];
           }
      }
-
-   for (i = 0; i < n; i++)
-     {
-        for (j = 0; j < m; j++)
-          {
-             printf("%d ", matr[m * i + j]);
-          }
-        printf("\n");
-     }
-
-end:
-   fclose(f);
-   if (matr) free(matr);
-}
-
-long long
-vectors_multiply(const long long *v1, const long long *v2, size_t size)
-{
-   long long ret = 0;
-   size_t i = 0;
-   if (!v1 || !v2)
-     {
-        printf("v1 or v2 is null: %p %p\n", v1, v2);
-        return 0;
-     }
-  for (i = 0; i < size; i++)
-    {
-       ret = ret + v1[i] * v2[i];
-    }
-  return ret;
+   free(mt->data);
+   i = mt->lines;
+   mt->lines = mt->columns;
+   mt->columns = i;
+   mt->data = m_new;
 }
 
 int
@@ -181,12 +127,21 @@ main(int argc, char **argv)
         goto end;
      }
 
-   _file_to_array_read(filename1);
+   Matrix *mt = matrix_from_file_create(filename1);
+   matrix_print(mt);
+   matrix_transponse(mt);
+   printf("-----------\n");
+   matrix_print(mt);
+
+   long long a[] = {1, 2, 3};
+   long long b[] = {1, 2, 3};
+   printf("res: %lld\n", vectors_multiply(a, b, 3));
 
 
 end:
    printf("goodbye\n");
    if (filename1) free(filename1);
    if (filename2) free(filename2);
+   if (mt) matrix_delete(mt);
    return 0;
 }
