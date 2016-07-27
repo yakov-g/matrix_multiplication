@@ -1,11 +1,117 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <unistd.h>
+#include <limits.h>
+#include <libgen.h>
+#include <sys/stat.h>
 
 
-
-int main(int argc, char **argv)
+/* Helper function which checks if path exists and
+ * resolves realpath.
+ * Returns newly allocated string - must be freed. */
+static char *
+_realpath_get(const char *input_path)
 {
+   char *ret = NULL;
+   struct stat st;
 
-   int a = 10;
+   if (!input_path) return NULL;
+   /* If path was found and this is regular file,
+    * resolve real path.*/
+   if (!stat(input_path, &st))
+     {
+        if (S_ISREG(st.st_mode))
+           ret = realpath(input_path, NULL);
+     }
 
+   return ret;
+}
+
+int
+main(int argc, char **argv)
+{
+   const char *path_input1 = NULL, *path_input2 = NULL, *path_output = NULL;
+   long int n_threads = 0;
+
+   char *filename1 = NULL, *filename2 = NULL;
+   static struct option long_options[] =
+     {
+          {"input1", required_argument, 0, '1'},
+          {"input2", required_argument, 0, '2'},
+          {"output", required_argument, 0, 'o'},
+          {"threads", required_argument, 0, 't'},
+          {"help", no_argument, 0, 'h'},
+          {0, 0, 0, 0}
+     };
+
+
+   int long_index = 0, opt;
+   while ((opt = getopt_long(argc, argv, "ho:t:", long_options, &long_index)) != -1)
+     {
+        switch (opt)
+          {
+           case 0: break;
+           case '1':
+                   {
+                      printf("1: %s\n", argv[optind - 1]);
+                      path_input1 = argv[optind - 1];
+                      break;
+                   }
+           case '2':
+                   {
+                      printf("2: %s\n", argv[optind - 1]);
+                      path_input2 = argv[optind - 1];
+                      break;
+                   }
+           case 'o':
+                   {
+                      printf("o: %s\n", argv[optind - 1]);
+                      path_output = argv[optind - 1];
+                      break;
+                   }
+           case 't':
+                   {
+                      n_threads = strtol(argv[optind - 1], NULL, 0);
+                      printf("t: %ld\n", n_threads);
+                      break;
+                   }
+           default:
+                   {
+                   }
+          }
+     };
+
+   if (!path_input1 || !path_input2)
+     {
+        printf("check usage\n");
+        goto end;
+     }
+
+   filename1 = _realpath_get(path_input1);
+   if (!filename1)
+     {
+        printf("Input path 1: doesn't exist or not a file\n");
+        goto end;
+     }
+
+   filename2 = _realpath_get(path_input2);
+   if (!filename2)
+     {
+        printf("Input path 2: doesn't exist or not a file\n");
+        goto end;
+     }
+
+   if (n_threads < 0)
+     {
+        printf("Error: --threads parameter is < 0\n");
+        goto end;
+     }
+
+
+end:
+   printf("goodbye\n");
+   if (filename1) free(filename1);
+   if (filename2) free(filename2);
    return 0;
 }
