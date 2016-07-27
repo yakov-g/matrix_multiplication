@@ -45,7 +45,6 @@ main(int argc, char **argv)
           {0, 0, 0, 0}
      };
 
-
    int long_index = 0, opt;
    while ((opt = getopt_long(argc, argv, "ho:t:", long_options, &long_index)) != -1)
      {
@@ -54,26 +53,22 @@ main(int argc, char **argv)
            case 0: break;
            case '1':
                    {
-                      printf("1: %s\n", argv[optind - 1]);
                       path_input1 = argv[optind - 1];
                       break;
                    }
            case '2':
                    {
-                      printf("2: %s\n", argv[optind - 1]);
                       path_input2 = argv[optind - 1];
                       break;
                    }
            case 'o':
                    {
-                      printf("o: %s\n", argv[optind - 1]);
                       path_output = argv[optind - 1];
                       break;
                    }
            case 't':
                    {
                       n_threads = strtol(argv[optind - 1], NULL, 0);
-                      printf("t: %ld\n", n_threads);
                       break;
                    }
            default:
