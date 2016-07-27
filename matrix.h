@@ -14,6 +14,12 @@ matrix_create(size_t lines, size_t columns);
 Matrix*
 matrix_from_file_create(const char *filename);
 
+Matrix *
+matrix_transponse(const Matrix *mt);
+
+Matrix *
+matrix_mult(const Matrix *mt1, const Matrix *mt2);
+
 void
 matrix_delete(Matrix *mt);
 

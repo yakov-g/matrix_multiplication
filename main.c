@@ -29,29 +29,6 @@ _realpath_get(const char *input_path)
    return ret;
 }
 
-
-
-
-void
-matrix_transponse(Matrix *mt)
-{
-   if (!mt) return;
-   long long *m_new = malloc(mt->lines * mt->columns * sizeof(long long));
-   size_t i, j;
-   for (i = 0; i < mt->lines; i++)
-     {
-        for (j = 0; j < mt->columns; j++)
-          {
-             m_new[j * mt->lines + i] = mt->data[i * mt->columns + j];
-          }
-     }
-   free(mt->data);
-   i = mt->lines;
-   mt->lines = mt->columns;
-   mt->columns = i;
-   mt->data = m_new;
-}
-
 int
 main(int argc, char **argv)
 {
@@ -129,14 +106,16 @@ main(int argc, char **argv)
 
    Matrix *mt = matrix_from_file_create(filename1);
    matrix_print(mt);
-   matrix_transponse(mt);
+   Matrix *trans = matrix_transponse(mt);
+
    printf("-----------\n");
-   matrix_print(mt);
+   matrix_print(trans);
+   matrix_delete(trans);
 
-   long long a[] = {1, 2, 3};
-   long long b[] = {1, 2, 3};
-   printf("res: %lld\n", vectors_multiply(a, b, 3));
-
+   Matrix *mult = matrix_mult(mt, mt);
+   printf("-----------\n");
+   matrix_print(mult);
+   matrix_delete(mult);
 
 end:
    printf("goodbye\n");
