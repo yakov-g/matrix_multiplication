@@ -6,6 +6,12 @@
 #include <libgen.h>
 #include <sys/stat.h>
 
+typedef struct
+{
+   unsigned int lines;
+   unsigned int columns;
+   int *data;
+} Matrix;
 
 /* Helper function which checks if path exists and
  * resolves realpath.
@@ -26,6 +32,78 @@ _realpath_get(const char *input_path)
      }
 
    return ret;
+}
+
+static void
+_file_to_array_read(const char *filename)
+{
+   if (!filename) return;
+   int n = 0, m = 0, i = 0, j = 0, res;
+   FILE *f = fopen(filename, "r");
+   long long *matr = NULL;
+
+   if (!f)
+     {
+        printf("Can not open file: \"%s\".\n", filename);
+        return;
+     }
+
+   res = fscanf(f, "%d %d ", &n, &m);
+   if (res != 2)
+     {
+        goto end;
+     }
+
+   printf("%d %d %d\n", res, n, m);
+   matr = malloc(n * m * sizeof(long long));
+   for (i = 0; i < n; i++)
+     {
+#if 0
+        char *str = NULL;
+        size_t n = 0;
+        getline(&str, &n, f);
+        printf(":%s", str);
+        free(str);
+        str = NULL;
+#endif
+        for (j = 0; j < m; j++)
+          {
+             int k;
+             res = fscanf(f, "%d", &k);
+             if (res != 1) goto end;
+             *(matr + m * i +j) = k;
+          }
+     }
+
+   for (i = 0; i < n; i++)
+     {
+        for (j = 0; j < m; j++)
+          {
+             printf("%d ", matr[m * i + j]);
+          }
+        printf("\n");
+     }
+
+end:
+   fclose(f);
+   if (matr) free(matr);
+}
+
+long long
+vectors_multiply(const long long *v1, const long long *v2, size_t size)
+{
+   long long ret = 0;
+   size_t i = 0;
+   if (!v1 || !v2)
+     {
+        printf("v1 or v2 is null: %p %p\n", v1, v2);
+        return 0;
+     }
+  for (i = 0; i < size; i++)
+    {
+       ret = ret + v1[i] * v2[i];
+    }
+  return ret;
 }
 
 int
@@ -102,6 +180,8 @@ main(int argc, char **argv)
         printf("Error: --threads parameter is < 0\n");
         goto end;
      }
+
+   _file_to_array_read(filename1);
 
 
 end:
