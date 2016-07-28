@@ -197,18 +197,18 @@ vectors_multiply(const long long *v1, const long long *v2, int size)
   /* this optimization does not help with compiler option -O3 */
   for (i = 0; i <= (int) size - 8; i+= 8)
     {
-       ret = ret + v1[i + 0] * v2[i + 0];
-       ret = ret + v1[i + 1] * v2[i + 1];
-       ret = ret + v1[i + 2] * v2[i + 2];
-       ret = ret + v1[i + 3] * v2[i + 3];
-       ret = ret + v1[i + 4] * v2[i + 4];
-       ret = ret + v1[i + 5] * v2[i + 5];
-       ret = ret + v1[i + 6] * v2[i + 6];
-       ret = ret + v1[i + 7] * v2[i + 7];
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
+       ret = ret + (*v1++) * (*v2++);
     }
   for (; i < size; i++)
     {
-       ret = ret + v1[i] * v2[i];
+       ret = ret + (*v1++) * (*v2++);
     }
 #endif
   return ret;
