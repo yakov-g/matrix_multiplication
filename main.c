@@ -4,9 +4,9 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include "matrix.h"
-
 
 /* Helper function which checks if path exists and
  * resolves realpath.
@@ -34,6 +34,8 @@ main(int argc, char **argv)
 {
    const char *path_input1 = NULL, *path_input2 = NULL, *path_output = NULL;
    long int n_threads = 0;
+   clock_t start, end;
+   Matrix *mt1 = NULL, *mt2 = NULL;
 
    char *filename1 = NULL, *filename2 = NULL;
    static struct option long_options[] =
@@ -104,23 +106,35 @@ main(int argc, char **argv)
         goto end;
      }
 
-   Matrix *mt = matrix_from_file_create(filename1);
-   matrix_print(mt);
-   Matrix *trans = matrix_transponse(mt);
+   mt1 = matrix_from_file_create(filename1);
+   mt2 = matrix_from_file_create(filename2);
 
-   printf("-----------\n");
-   matrix_print(trans);
-   matrix_delete(trans);
+   if (!mt1 || !mt2)
+      goto end;
 
-   Matrix *mult = matrix_mult(mt, mt);
-   printf("-----------\n");
-   matrix_print(mult);
+   start = clock();
+   Matrix *mult2 = matrix_no_transpose_mult(mt1, mt2);
+   end = clock();
+   printf("Time: %ld - %ld = %ld\n", end, start, end - start);
+   printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
+
+
+   start = clock();
+   Matrix *mult = matrix_mult(mt1, mt2);
+   end = clock();
+   printf("Time: %ld - %ld = %ld\n", end, start, end - start);
+   printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
+
+
+
+   printf("Matrix cmp: %d\n", matrix_cmp(mult, mult2));
    matrix_delete(mult);
+   matrix_delete(mult2);
 
 end:
-   printf("goodbye\n");
    if (filename1) free(filename1);
    if (filename2) free(filename2);
-   if (mt) matrix_delete(mt);
+   if (mt1) matrix_delete(mt1);
+   if (mt2) matrix_delete(mt2);
    return 0;
 }

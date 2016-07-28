@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "matrix.h"
-#include "stdlib.h"
 
 void
 matrix_print(Matrix *mt)
@@ -21,6 +22,7 @@ matrix_print(Matrix *mt)
 Matrix *
 matrix_create(size_t lines, size_t columns)
 {
+   if (lines <= 0 || columns <= 0) return NULL;
    Matrix *mtr = (Matrix *) malloc(sizeof(Matrix));
    mtr->lines = lines;
    mtr->columns = columns;
@@ -33,6 +35,9 @@ matrix_from_file_create(const char *filename)
 {
    if (!filename) return NULL;
    int n = 0, m = 0, i = 0, j = 0, res;
+   int scan_count = 0;
+   Matrix *mt = NULL;
+
    FILE *f = fopen(filename, "r");
 
    if (!f)
@@ -47,8 +52,8 @@ matrix_from_file_create(const char *filename)
         goto end;
      }
 
-   printf("%d %d %d\n", res, n, m);
-   Matrix *mt = matrix_create(n, m);
+   mt = matrix_create(n, m);
+   if (!mt) goto end;
    for (i = 0; i < n; i++)
      {
 #if 0
@@ -61,14 +66,19 @@ matrix_from_file_create(const char *filename)
 #endif
         for (j = 0; j < m; j++)
           {
-             int k;
-             res = fscanf(f, "%d", &k);
+             res = fscanf(f, "%lld", &mt->data[m * i + j]);
              if (res != 1) goto end;
-             mt->data[m * i + j] = k;
+             scan_count += res;
           }
      }
 
 end:
+   if (scan_count != m * n)
+     {
+        matrix_delete(mt);
+        mt = NULL;
+        printf("Wrong number of elements\n");
+     }
    fclose(f);
    return mt;
 }
@@ -96,6 +106,7 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
    if (mt1->columns != mt2->lines)
      {
         printf("Matrixes can not be multiplicated");
+        return NULL;
      }
 
    Matrix *res = matrix_create(mt1->lines, mt2->columns);
@@ -119,6 +130,45 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
    return res;
 }
 
+Matrix *
+matrix_no_transpose_mult(const Matrix *mt1, const Matrix *mt2)
+{
+   if (!mt1 || !mt2) return NULL;
+   if (mt1->columns != mt2->lines)
+     {
+        printf("Matrixes can not be multiplicated");
+        return NULL;
+     }
+
+   Matrix *res = matrix_create(mt1->lines, mt2->columns);
+
+   size_t i, j, k;
+   size_t v_size = mt1->columns;
+   for (i = 0; i < mt1->lines; i++)
+     {
+        for (j = 0; j < mt2->columns; j++)
+          {
+             long long m = 0;
+             for (k = 0; k < v_size; k++)
+               {
+                  m += mt1->data[i * v_size + k] * mt2->data[k * mt2->columns + j];
+               }
+
+             res->data[i * res->columns + j] = m;
+          }
+     }
+   return res;
+}
+
+unsigned int
+matrix_cmp(const Matrix *mt1, const Matrix *mt2)
+{
+   if (!mt1 || !mt2) return 1;
+   if (mt1 == mt2) return 0;
+   if (mt1->lines != mt2->lines ||
+       mt1->columns != mt2->columns) return 1;
+   return !!memcmp(mt1->data, mt2->data, mt1->lines * mt1->columns * sizeof(long long));
+}
 
 void
 matrix_delete(Matrix *mt)
@@ -129,18 +179,37 @@ matrix_delete(Matrix *mt)
 }
 
 long long
-vectors_multiply(const long long *v1, const long long *v2, size_t size)
+vectors_multiply(const long long *v1, const long long *v2, int size)
 {
    long long ret = 0;
-   size_t i = 0;
+   int i = 0;
    if (!v1 || !v2)
      {
         printf("v1 or v2 is null: %p %p\n", v1, v2);
         return 0;
      }
+#if 0
   for (i = 0; i < size; i++)
+    {
+       ret = ret + (*v1++) * (*v2++);
+    }
+#else
+  /* this optimization does not help with compiler option -O3 */
+  for (i = 0; i <= (int) size - 8; i+= 8)
+    {
+       ret = ret + v1[i + 0] * v2[i + 0];
+       ret = ret + v1[i + 1] * v2[i + 1];
+       ret = ret + v1[i + 2] * v2[i + 2];
+       ret = ret + v1[i + 3] * v2[i + 3];
+       ret = ret + v1[i + 4] * v2[i + 4];
+       ret = ret + v1[i + 5] * v2[i + 5];
+       ret = ret + v1[i + 6] * v2[i + 6];
+       ret = ret + v1[i + 7] * v2[i + 7];
+    }
+  for (; i < size; i++)
     {
        ret = ret + v1[i] * v2[i];
     }
+#endif
   return ret;
 }

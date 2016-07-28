@@ -20,6 +20,12 @@ matrix_transponse(const Matrix *mt);
 Matrix *
 matrix_mult(const Matrix *mt1, const Matrix *mt2);
 
+Matrix *
+matrix_no_transpose_mult(const Matrix *mt1, const Matrix *mt2);
+
+unsigned int
+matrix_cmp(const Matrix *mt1, const Matrix *mt2);
+
 void
 matrix_delete(Matrix *mt);
 
@@ -27,6 +33,6 @@ void
 matrix_print(Matrix *mt);
 
 long long
-vectors_multiply(const long long *v1, const long long *v2, size_t size);
+vectors_multiply(const long long *v1, const long long *v2, int size);
 
 #endif
