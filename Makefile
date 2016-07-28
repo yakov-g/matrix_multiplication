@@ -1,7 +1,8 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wshadow -Wno-type-limits -g3 -O3 -Wpointer-arith -fvisibility=hidden
 
-SOURCES = main.c matrix.c
+LIBS = -lpthread
+SOURCES = main.c matrix.c matrix_thread.c
 OBJECTS=$(SOURCES:.c=.o)
 
 EXECUTABLE = matrix_multiply mm 
@@ -15,7 +16,7 @@ EXECUTABLE = matrix_multiply mm
 all: $(EXECUTABLE)     
 
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@ $(LIBS)
 
 clean:
 	rm -f *.o $(EXECUTABLE)

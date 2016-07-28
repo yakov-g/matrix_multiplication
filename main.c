@@ -126,6 +126,7 @@ main(int argc, char **argv)
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
 
 
+   matrix_mult_thread();
 
    printf("Matrix cmp: %d\n", matrix_cmp(mult, mult2));
    matrix_delete(mult);
