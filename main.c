@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "matrix.h"
+#include "matrix_thread.h"
 
 /* Helper function which checks if path exists and
  * resolves realpath.
@@ -33,7 +34,7 @@ int
 main(int argc, char **argv)
 {
    const char *path_input1 = NULL, *path_input2 = NULL, *path_output = NULL;
-   long int n_threads = 0;
+   int n_threads = -1;
    clock_t start, end;
    Matrix *mt1 = NULL, *mt2 = NULL;
 
@@ -112,12 +113,13 @@ main(int argc, char **argv)
    if (!mt1 || !mt2)
       goto end;
 
+   matrix_thread_init(n_threads);
+
    start = clock();
    Matrix *mult2 = matrix_no_transpose_mult(mt1, mt2);
    end = clock();
    printf("Time: %ld - %ld = %ld\n", end, start, end - start);
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
-
 
    start = clock();
    Matrix *mult = matrix_mult(mt1, mt2);
@@ -127,6 +129,7 @@ main(int argc, char **argv)
 
 
    matrix_mult_thread();
+   matrix_thread_shutdown();
 
    printf("Matrix cmp: %d\n", matrix_cmp(mult, mult2));
    matrix_delete(mult);
