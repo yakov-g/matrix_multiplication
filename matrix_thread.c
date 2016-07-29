@@ -81,6 +81,40 @@ matrix_thread_shutdown(void)
 }
 
 
-void matrix_mult_thread()
+Matrix *
+matrix_mult_thread(const Matrix *mt1, const Matrix *mt2)
 {
+   if (!mt1 || !mt2) return NULL;
+   if (mt1->columns != mt2->lines)
+     {
+        printf("Matrixes can not be multiplicated");
+        return NULL;
+     }
+
+   Matrix *res = matrix_create(mt1->lines, mt2->columns);
+   Matrix *mt2_trans = matrix_transponse(mt2);
+
+   size_t i, j;
+   const long long *v1 = NULL, *v2 = NULL;
+   size_t v_size = mt1->columns;
+   for (i = 0; i < mt1->lines; i++)
+     {
+        for (j = 0; j < mt2_trans->lines; j++)
+          {
+             v1 = mt1->data + i * v_size;
+             v2 = mt2_trans->data + j * v_size;
+
+ //            res->data[i * res->columns + j] = \
+ //               vectors_multiply(v1, v2, v_size);
+          }
+     }
+
+
+   pthread_mutex_lock(&_mutex);
+   _work_to_do = 1;
+   pthread_cond_signal(&_cond);
+   pthread_mutex_unlock(&_mutex);
+
+   matrix_delete(mt2_trans);
+   return res;
 }
