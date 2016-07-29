@@ -179,10 +179,10 @@ matrix_delete(Matrix *mt)
 }
 
 long long
-vectors_multiply(const long long *v1, const long long *v2, int size)
+vectors_multiply(const long long *v1, const long long *v2, size_t size)
 {
    long long ret = 0;
-   int i = 0;
+   size_t i = 0;
    if (!v1 || !v2)
      {
         printf("v1 or v2 is null: %p %p\n", v1, v2);
@@ -195,16 +195,19 @@ vectors_multiply(const long long *v1, const long long *v2, int size)
     }
 #else
   /* this optimization does not help with compiler option -O3 */
-  for (i = 0; i <= (int) size - 8; i+= 8)
+  if (size > 7)
     {
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
-       ret = ret + (*v1++) * (*v2++);
+       for (i = 0; i <= size - 8; i+= 8)
+         {
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+            ret = ret + (*v1++) * (*v2++);
+         }
     }
   for (; i < size; i++)
     {

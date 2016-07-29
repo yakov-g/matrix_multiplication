@@ -33,6 +33,6 @@ void
 matrix_print(Matrix *mt);
 
 long long
-vectors_multiply(const long long *v1, const long long *v2, int size);
+vectors_multiply(const long long *v1, const long long *v2, size_t size);
 
 #endif
