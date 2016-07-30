@@ -14,7 +14,29 @@ struct _Mult_Data
    const long long *v2;
    size_t v_size;
    long long *result_pointer;
+   T_Event *te;
 };
+
+static Mult_Data *
+_mult_data_create(const long long *v1, const long long *v2, size_t v_size,\
+                 long long *res_pointer, T_Event *te)
+{
+   if (!v1 || !v2 || !v_size || !res_pointer) return NULL;
+   Mult_Data *md = (Mult_Data *) malloc (sizeof(Mult_Data));
+   md->v1 = v1;
+   md->v2 = v2;
+   md->v_size = v_size;
+   md->result_pointer = res_pointer;
+   md->te = te;
+   return md;
+}
+
+static void
+_mult_data_destroy(Mult_Data *md)
+{
+   if (!md) return;
+   free(md);
+}
 
 static void
 _vect_mult_task_func(const void *data)
@@ -23,26 +45,9 @@ _vect_mult_task_func(const void *data)
    long long res;
    res = vectors_multiply(md->v1, md->v2, md->v_size);
    *md->result_pointer = res;
-}
 
-Mult_Data *
-mult_data_create(const long long *v1, const long long *v2, size_t v_size,\
-                 long long *res_pointer)
-{
-   if (!v1 || !v2 || !v_size || !res_pointer) return NULL;
-   Mult_Data *md = (Mult_Data *) malloc (sizeof(Mult_Data));
-   md->v1 = v1;
-   md->v2 = v2;
-   md->v_size = v_size;
-   md->result_pointer = res_pointer;
-   return md;
-}
-
-void
-mult_data_delete(Mult_Data *md)
-{
-   if (!md) return;
-   free(md);
+   t_event_dec(md->te);
+   _mult_data_destroy(md);
 }
 
 Matrix *
@@ -62,6 +67,8 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
    Matrix *res = matrix_create(mt1->lines, mt2->columns);
    Matrix *mt2_trans = matrix_transponse(mt2);
 
+   T_Event *te = t_event_create(mt1->lines * mt2->columns);
+
    size_t i, j;
    const long long *v1 = NULL, *v2 = NULL;
    size_t v_size = mt1->columns;
@@ -73,16 +80,17 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
              v1 = mt1->data + i * v_size;
              v2 = mt2_trans->data + j * v_size;
 
-             Mult_Data *md = mult_data_create(v1, v2, v_size, res->data + i * res->columns + j);
+             Mult_Data *md = _mult_data_create(v1, v2, v_size,
+                                            res->data + i * res->columns + j, te);
              T_Task *tt = t_task_create(_vect_mult_task_func, md);
 
              t_pool_task_insert(tpool, tt);
           }
      }
 
-   threads_run(tpool);
-   threads_wait(tpool);
+   t_event_wait(te);
 
+   t_event_destroy(te);
    matrix_delete(mt2_trans);
    return res;
 }
