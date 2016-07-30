@@ -106,7 +106,7 @@ main(int argc, char **argv)
         printf("Error: --threads parameter is < 0\n");
         goto end;
      }
-   thread_pool_init(n_threads);
+   T_Pool *tpool = t_pool_create(n_threads);
 
    mt1 = matrix_from_file_create(filename1);
    mt2 = matrix_from_file_create(filename2);
@@ -127,7 +127,7 @@ main(int argc, char **argv)
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
 
    start = clock();
-   Matrix *mult3 = matrix_mult_thread(mt1, mt2);
+   Matrix *mult3 = matrix_mult_thread(tpool, mt1, mt2);
    end = clock();
    printf("Time: %ld - %ld = %ld\n", end, start, end - start);
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
@@ -138,7 +138,7 @@ main(int argc, char **argv)
    matrix_delete(mult);
    matrix_delete(mult2);
    matrix_delete(mult3);
-   thread_pool_shutdown();
+   t_pool_shutdown(tpool);
 
 end:
    if (filename1) free(filename1);

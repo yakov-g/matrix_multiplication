@@ -1,12 +1,9 @@
 #ifndef _MATRIX_THREAD_H_
 #define _MATRIX_THREAD_H_
 
+#include "tpool.h"
+
 Matrix *
-matrix_mult_thread(const Matrix *mt1, const Matrix *mt2);
+matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2);
 
-int
-thread_pool_init(int threads_num);
-
-int
-thread_pool_shutdown(void);
 #endif

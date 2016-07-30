@@ -24,10 +24,10 @@ tqueue_push(TQueue *tqueue, void *data)
    sem_post(&tqueue->data_semaphore);
 }
 
-void *
+const void *
 tqueue_get(TQueue *tqueue)
 {
-   void *ret = NULL;
+   const void *ret = NULL;
    /*clean up threads stuk on sem_wait */
    sem_wait(&tqueue->data_semaphore);
 
@@ -51,7 +51,7 @@ tqueue_create()
      {
         goto bad_end;
      }
-   if (!pthread_mutex_init(&tqueue->queue_mutex, NULL))
+   if (pthread_mutex_init(&tqueue->queue_mutex, NULL))
      {
         goto bad_end;
      }

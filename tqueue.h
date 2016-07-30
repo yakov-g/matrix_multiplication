@@ -6,7 +6,7 @@ typedef struct _TQueue TQueue;
 void
 tqueue_push(TQueue *tqueue, void *data);
 
-void *
+const void *
 tqueue_get(TQueue *tqueue);
 
 TQueue *
