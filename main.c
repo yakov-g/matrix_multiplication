@@ -138,7 +138,7 @@ main(int argc, char **argv)
    matrix_delete(mult);
    matrix_delete(mult2);
    matrix_delete(mult3);
-   t_pool_shutdown(tpool);
+   t_pool_destroy(tpool);
 
 end:
    if (filename1) free(filename1);

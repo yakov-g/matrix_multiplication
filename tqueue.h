@@ -13,6 +13,6 @@ TQueue *
 tqueue_create();
 
 void
-tqueue_delete(TQueue *queue);
+tqueue_destroy(TQueue *queue);
 
 #endif

@@ -16,6 +16,6 @@ Queue *
 queue_create();
 
 void
-queue_delete(Queue *queue);
+queue_destroy(Queue *queue);
 
 #endif

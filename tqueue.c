@@ -64,17 +64,17 @@ tqueue_create()
    return tqueue;
 
 bad_end:
-   queue_delete(tqueue->queue);
+   queue_destroy(tqueue->queue);
    free(tqueue);
    return NULL;
 }
 
 void
-tqueue_delete(TQueue *tqueue)
+tqueue_destroy(TQueue *tqueue)
 {
    if (!tqueue) return;
    sem_destroy(&tqueue->data_semaphore);
    pthread_mutex_destroy(&tqueue->queue_mutex);
-   queue_delete(tqueue->queue);
+   queue_destroy(tqueue->queue);
    free(tqueue);
 }

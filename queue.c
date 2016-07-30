@@ -22,7 +22,7 @@ _queue_node_create()
 }
 
 static void
-_queue_node_delete(Queue_Node *node)
+_queue_node_destroy(Queue_Node *node)
 {
    if (!node) return;
    free(node);
@@ -55,7 +55,7 @@ queue_pop(Queue *queue)
    if (!queue->head) return;
 
    Queue_Node *next = queue->head->next;
-   _queue_node_delete(queue->head);
+   _queue_node_destroy(queue->head);
    queue->head = next;
    if (!next)
      {
@@ -78,7 +78,7 @@ queue_create()
 }
 
 void
-queue_delete(Queue *queue)
+queue_destroy(Queue *queue)
 {
    if (!queue) return;
    while (queue->head)

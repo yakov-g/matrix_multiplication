@@ -35,7 +35,7 @@ t_task_create(void (*task_func)(const void *data), const void *data)
 }
 
 void
-t_task_delete(T_Task *t_task)
+t_task_destroy(T_Task *t_task)
 {
    if (!t_task) return;
    free(t_task);
@@ -122,14 +122,14 @@ t_pool_create(int thread_num)
 
 bad_end:
    exit(0);
-   tqueue_delete(tpool->tasks);
+   tqueue_destroy(tpool->tasks);
    free(tpool->_thread_arr);
    free(tpool);
    return NULL;
 }
 
 int
-t_pool_shutdown(T_Pool *tpool)
+t_pool_destroy(T_Pool *tpool)
 {
    if (!tpool) return 1;
 
@@ -148,7 +148,7 @@ t_pool_shutdown(T_Pool *tpool)
    pthread_cond_destroy(&tpool->_cond_start);
    pthread_cond_destroy(&tpool->_cond_ready);
 
-   tqueue_delete(tpool->tasks);
+   tqueue_destroy(tpool->tasks);
    free(tpool->_thread_arr);
    free(tpool);
    return 0;
