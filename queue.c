@@ -81,5 +81,9 @@ void
 queue_delete(Queue *queue)
 {
    if (!queue) return;
+   while (queue->head)
+     {
+        queue_pop(queue);
+     }
    free(queue);
 }

@@ -4,7 +4,7 @@
 typedef struct _TQueue TQueue;
 
 void
-tqueue_push(TQueue *tqueue, void *data);
+tqueue_push(TQueue *tqueue, const void *data);
 
 const void *
 tqueue_get(TQueue *tqueue);

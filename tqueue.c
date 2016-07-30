@@ -13,7 +13,7 @@ struct _TQueue
 };
 
 void
-tqueue_push(TQueue *tqueue, void *data)
+tqueue_push(TQueue *tqueue, const void *data)
 {
    if (!tqueue) return;
    if (!data) return;
@@ -21,7 +21,7 @@ tqueue_push(TQueue *tqueue, void *data)
    queue_push(tqueue->queue, data);
    pthread_mutex_unlock(&tqueue->queue_mutex);
 
-   sem_post(&tqueue->data_semaphore);
+   //sem_post(&tqueue->data_semaphore);
 }
 
 const void *
@@ -29,7 +29,7 @@ tqueue_get(TQueue *tqueue)
 {
    const void *ret = NULL;
    /*clean up threads stuk on sem_wait */
-   sem_wait(&tqueue->data_semaphore);
+   //sem_wait(&tqueue->data_semaphore);
 
    pthread_mutex_lock(&tqueue->queue_mutex);
    ret = queue_peek(tqueue->queue);

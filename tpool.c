@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include "tpool.h"
 #include "queue.h"
+#include "tqueue.h"
 
 struct _T_Task
 {
@@ -19,11 +20,8 @@ struct _T_Pool
    pthread_t *_thread_arr;
    int _thread_num;
 
-   Queue *tasks;
+   TQueue *tasks;
 };
-
-static const void*
-_pool_task_get(T_Pool *tpool);
 
 T_Task *
 t_task_create(void (*task_func)(const void *data), const void *data)
@@ -48,9 +46,7 @@ t_pool_task_insert(T_Pool *tpool, const T_Task *task)
 {
    if (!tpool) return;
    if (!task) return;
-   pthread_mutex_lock(&tpool->_mutex);
-   queue_push(tpool->tasks, task);
-   pthread_mutex_unlock(&tpool->_mutex);
+   tqueue_push(tpool->tasks, task);
 }
 
 static void *
@@ -59,7 +55,7 @@ _thread_func(void *arg)
    T_Pool *tpool = (T_Pool *) arg;
    while (1)
      {
-        T_Task *t = (T_Task *) _pool_task_get(tpool);
+        T_Task *t = (T_Task *) tqueue_get(tpool->tasks);
         if (t && t->task_func) t->task_func(t->data);
 
         if (!t)
@@ -100,7 +96,7 @@ t_pool_create(int thread_num)
         goto bad_end;
      }
 
-   tpool->tasks = queue_create();
+   tpool->tasks = tqueue_create();
    if (!tpool->tasks)
       goto bad_end;
 
@@ -126,7 +122,7 @@ t_pool_create(int thread_num)
 
 bad_end:
    exit(0);
-   queue_delete(tpool->tasks);
+   tqueue_delete(tpool->tasks);
    free(tpool->_thread_arr);
    free(tpool);
    return NULL;
@@ -152,7 +148,7 @@ t_pool_shutdown(T_Pool *tpool)
    pthread_cond_destroy(&tpool->_cond_start);
    pthread_cond_destroy(&tpool->_cond_ready);
 
-   queue_delete(tpool->tasks);
+   tqueue_delete(tpool->tasks);
    free(tpool->_thread_arr);
    free(tpool);
    return 0;
@@ -176,27 +172,4 @@ threads_wait(T_Pool *tpool)
         pthread_cond_wait(&tpool->_cond_ready, &tpool->_mutex);
      }
    pthread_mutex_unlock(&tpool->_mutex);
-}
-
-static const void*
-_pool_task_get(T_Pool *tpool)
-{
-   const void *ret = NULL;
-   pthread_mutex_lock(&tpool->_mutex);
-#if 0
-   if (_task_pool.task_number)
-     {
-       ret = *_task_pool.p;
-       _task_pool.p++;
-       _task_pool.task_number--;
-     }
-#else
-   ret = queue_peek(tpool->tasks);
-   if (ret)
-     {
-        queue_pop(tpool->tasks);
-     }
-#endif
-   pthread_mutex_unlock(&tpool->_mutex);
-   return ret;
 }

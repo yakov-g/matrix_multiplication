@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include "matrix.h"
 #include "matrix_thread.h"
 #include "tpool.h"
