@@ -106,14 +106,13 @@ main(int argc, char **argv)
         printf("Error: --threads parameter is < 0\n");
         goto end;
      }
+   thread_pool_init(n_threads);
 
    mt1 = matrix_from_file_create(filename1);
    mt2 = matrix_from_file_create(filename2);
 
    if (!mt1 || !mt2)
       goto end;
-
-   matrix_thread_init(n_threads);
 
    start = clock();
    Matrix *mult2 = matrix_no_transpose_mult(mt1, mt2);
@@ -127,13 +126,19 @@ main(int argc, char **argv)
    printf("Time: %ld - %ld = %ld\n", end, start, end - start);
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
 
+   start = clock();
+   Matrix *mult3 = matrix_mult_thread(mt1, mt2);
+   end = clock();
+   printf("Time: %ld - %ld = %ld\n", end, start, end - start);
+   printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
 
-   matrix_mult_thread();
-   matrix_thread_shutdown();
+   printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult, mult2));
+   printf("Matrix cmp 2-3: %d\n", matrix_cmp(mult2, mult3));
 
-   printf("Matrix cmp: %d\n", matrix_cmp(mult, mult2));
    matrix_delete(mult);
    matrix_delete(mult2);
+   matrix_delete(mult3);
+   thread_pool_shutdown();
 
 end:
    if (filename1) free(filename1);
