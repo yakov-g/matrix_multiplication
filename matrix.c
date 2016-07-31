@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "matrix.h"
+#include "helper.h"
 
 void
 matrix_print(Matrix *mt)
@@ -127,8 +128,15 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
      }
 
    Matrix *res = matrix_create(mt1->lines, mt2->columns);
-   Matrix *mt2_trans = matrix_transponse(mt2);
 
+   clock_t start, end;
+   start = clock();
+   Matrix *mt2_trans = matrix_transponse(mt2);
+   end = clock();
+   printf("Trans Time: %ld - %ld = %ld\n", end, start, end - start);
+
+
+   start = clock();
    size_t i, j;
    const long long *v1 = NULL, *v2 = NULL;
    size_t v_size = mt1->columns;
@@ -143,6 +151,8 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
                 vectors_multiply(v1, v2, v_size);
           }
      }
+   end = clock();
+   printf("Mult Time: %ld - %ld = %ld\n", end, start, end - start);
    matrix_delete(mt2_trans);
    return res;
 }
@@ -200,19 +210,13 @@ vectors_multiply(const long long *v1, const long long *v2, size_t size)
 {
    long long ret = 0;
    size_t i = 0;
-   if (!v1 || !v2)
+   if (unlikely(!v1 || !v2))
      {
         printf("v1 or v2 is null: %p %p\n", v1, v2);
         return 0;
      }
-#if 0
-  for (i = 0; i < size; i++)
-    {
-       ret = ret + (*v1++) * (*v2++);
-    }
-#else
   /* this optimization does not help with compiler option -O3 */
-  if (size > 7)
+  if (likely(size > 7))
     {
        for (i = 0; i <= size - 8; i+= 8)
          {
@@ -230,6 +234,5 @@ vectors_multiply(const long long *v1, const long long *v2, size_t size)
     {
        ret = ret + (*v1++) * (*v2++);
     }
-#endif
   return ret;
 }

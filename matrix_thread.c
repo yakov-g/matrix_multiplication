@@ -5,26 +5,38 @@
 #include "matrix.h"
 #include "matrix_thread.h"
 #include "tpool.h"
+#include "helper.h"
 
-typedef struct _Mult_Data Mult_Data;
+typedef struct _Mult_Data2 Mult_Data2;
 
-struct _Mult_Data
+struct _Mult_Data2
 {
    const long long *v1;
    const long long *v2;
+   size_t v_size1;
+   size_t v_size2;
    size_t v_size;
    long long *result_pointer;
    T_Event *te;
+   T_Task *task;
 };
 
-static Mult_Data *
-_mult_data_create(const long long *v1, const long long *v2, size_t v_size,\
-                 long long *res_pointer, T_Event *te)
+static Mult_Data2 *
+_mult_data_create2(const long long *v1, size_t v_size1,
+                   const long long *v2, size_t v_size2,
+                   size_t v_size,
+                   long long *res_pointer, T_Event *te)
 {
-   if (!v1 || !v2 || !v_size || !res_pointer) return NULL;
-   Mult_Data *md = (Mult_Data *) malloc (sizeof(Mult_Data));
+   if (unlikely(!v1 || !v_size1 ||
+                !v2 || !v_size2 || !v_size || !res_pointer)) return NULL;
+
+   Mult_Data2 *md = (Mult_Data2 *) malloc (sizeof(Mult_Data2));
    md->v1 = v1;
+   md->v_size1 = v_size1;
+
    md->v2 = v2;
+   md->v_size2 = v_size2;
+
    md->v_size = v_size;
    md->result_pointer = res_pointer;
    md->te = te;
@@ -32,22 +44,33 @@ _mult_data_create(const long long *v1, const long long *v2, size_t v_size,\
 }
 
 static void
-_mult_data_destroy(Mult_Data *md)
+_mult_data_destroy2(Mult_Data2 *md)
 {
-   if (!md) return;
+   if (unlikely(!md)) return;
    free(md);
 }
 
 static void
-_vect_mult_task_func(const void *data)
+_vect_mult_task_func2(const void *data)
 {
-   Mult_Data *md = (Mult_Data *) data;
+   Mult_Data2 *md = (Mult_Data2 *) data;
    long long res;
-   res = vectors_multiply(md->v1, md->v2, md->v_size);
-   *md->result_pointer = res;
+   size_t k = md->v_size2 / md->v_size1;
+   size_t i = 0;
+
+   long long *v2_p = (long long *) md->v2;
+   long long *res_p = (long long *) md->result_pointer;
+   for (i = 0; i < k; i++)
+     {
+        res = vectors_multiply(md->v1, v2_p, md->v_size1);
+        *res_p = res;
+        v2_p += md->v_size1;
+        res_p++;
+     }
 
    t_event_dec(md->te);
-   _mult_data_destroy(md);
+   t_task_destroy(md->task);
+   _mult_data_destroy2(md);
 }
 
 Matrix *
@@ -65,30 +88,60 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
      }
 
    Matrix *res = matrix_create(mt1->lines, mt2->columns);
+   if (!res) return NULL;
+
+   clock_t start, end;
+   start = clock();
    Matrix *mt2_trans = matrix_transponse(mt2);
+   end = clock();
+   printf("Trans Time: %ld - %ld = %ld\n", end, start, end - start);
 
-   T_Event *te = t_event_create(mt1->lines * mt2->columns);
-
-   size_t i, j;
+   size_t i;
    const long long *v1 = NULL, *v2 = NULL;
    size_t v_size = mt1->columns;
 
-   for (i = 0; i < mt1->lines; i++)
+   /* number of columns in each half of second matrix,
+    * the same as lines in m2 trans */
+   size_t m2_h1_ln = mt2_trans->lines / 2;
+   size_t m2_h2_ln = mt2_trans->lines / 2 + mt2_trans->lines % 2;
+
+   /* 1st half 2nd matrix size */
+   size_t m2_h1_size = m2_h1_ln * mt2_trans->columns;
+   size_t m2_h2_size = m2_h2_ln * mt2_trans->columns;
+
+   T_Event *te = t_event_create(mt1->lines * (mt2_trans->lines == 1 ? 1 : 2));
+   if (likely(mt2_trans->lines > 1))
      {
-        for (j = 0; j < mt2_trans->lines; j++)
+        for (i = 0; i < mt1->lines; i++)
           {
              v1 = mt1->data + i * v_size;
-             v2 = mt2_trans->data + j * v_size;
+             v2 = mt2_trans->data;
 
-             Mult_Data *md = _mult_data_create(v1, v2, v_size,
-                                            res->data + i * res->columns + j, te);
-             T_Task *tt = t_task_create(_vect_mult_task_func, md);
-
+             Mult_Data2 *md = _mult_data_create2(v1, v_size, v2, m2_h1_size,
+                                                 v_size, res->data + i * res->columns, te);
+             T_Task *tt = t_task_create(_vect_mult_task_func2, md);
+             md->task = tt;
              t_pool_task_insert(tpool, tt);
           }
      }
 
+   for (i = 0; i < mt1->lines; i++)
+     {
+        v1 = mt1->data + i * v_size;
+        v2 = mt2_trans->data + m2_h1_size;
+
+        Mult_Data2 *md = _mult_data_create2(v1, v_size, v2, m2_h2_size,
+                                            v_size, res->data + i * res->columns + m2_h1_ln, te);
+        T_Task *tt = t_task_create(_vect_mult_task_func2, md);
+        md->task = tt;
+        t_pool_task_insert(tpool, tt);
+     }
+
+   start = clock();
+   t_pool_run(tpool);
    t_event_wait(te);
+   end = clock();
+   printf("Mult Time: %ld - %ld = %ld\n", end, start, end - start);
 
    t_event_destroy(te);
    matrix_delete(mt2_trans);

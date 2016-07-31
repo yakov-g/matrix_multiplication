@@ -106,7 +106,7 @@ main(int argc, char **argv)
         printf("Error: --threads parameter is < 0\n");
         goto end;
      }
-   T_Pool *tpool = t_pool_create(n_threads);
+   T_Pool *tpool = t_pool_create(n_threads, 1);
 
    //mt1 = matrix_from_file_create(filename1);
    //mt2 = matrix_from_file_create(filename2);
@@ -117,30 +117,40 @@ main(int argc, char **argv)
    if (!mt1 || !mt2)
       goto end;
 
+#if 0
    start = clock();
    Matrix *mult2 = matrix_no_transpose_mult(mt1, mt2);
    end = clock();
    printf("Time: %ld - %ld = %ld\n", end, start, end - start);
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
+#endif
 
+   Matrix *mult = NULL;
+
+//#if 0
    start = clock();
-   Matrix *mult = matrix_mult(mt1, mt2);
+   mult = matrix_mult(mt1, mt2);
    end = clock();
-   printf("Time: %ld - %ld = %ld\n", end, start, end - start);
-   printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
+   printf("Full time: %ld - %ld = %ld\n", end, start, end - start);
+   printf("full time: %ld\n", (end - start) / CLOCKS_PER_SEC);
+//#endif
 
+//#if 0
    start = clock();
    Matrix *mult3 = matrix_mult_thread(tpool, mt1, mt2);
    end = clock();
-   printf("Time: %ld - %ld = %ld\n", end, start, end - start);
-   printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
+   printf("Full time: %ld - %ld = %ld\n", end, start, end - start);
+   printf("Full time: %ld\n", (end - start) / CLOCKS_PER_SEC);
+//#endif
 
-   printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult, mult2));
-   printf("Matrix cmp 2-3: %d\n", matrix_cmp(mult2, mult3));
+   //printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult1, mult2));
+   printf("Matrix cmp 2-3: %d\n", matrix_cmp(mult, mult3));
+
+
 
    matrix_delete(mult);
-   matrix_delete(mult2);
    matrix_delete(mult3);
+   //matrix_delete(mult2);
    t_pool_destroy(tpool);
 
 end:

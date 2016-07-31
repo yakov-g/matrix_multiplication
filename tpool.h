@@ -12,13 +12,19 @@ void
 t_task_destroy(T_Task *t_task);
 
 T_Pool*
-t_pool_create(int thread_num);
+t_pool_create(int thread_num, int locked);
 
 int
 t_pool_destroy(T_Pool *tpool);
 
 void
 t_pool_task_insert(T_Pool *tpool, const T_Task *task);
+
+void
+t_pool_run(T_Pool *tpool);
+
+size_t
+tpool_thread_count_get(const T_Pool *tpool);
 
 T_Event *
 t_event_create(size_t counter);

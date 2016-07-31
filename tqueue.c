@@ -36,7 +36,13 @@ tqueue_get(TQueue *tqueue)
    pthread_mutex_unlock(&tqueue->queue_mutex);
 
    sem_wait(&tqueue->data_semaphore);
-   if (tqueue->close) return NULL;
+   if (tqueue->close)
+     {
+        pthread_mutex_lock(&tqueue->queue_mutex);
+        tqueue->wait_count--;
+        pthread_mutex_unlock(&tqueue->queue_mutex);
+        return NULL;
+     }
 
    pthread_mutex_lock(&tqueue->queue_mutex);
    tqueue->wait_count--;
@@ -84,8 +90,17 @@ tqueue_destroy(TQueue *tqueue)
    if (!tqueue) return;
    tqueue->close = 1;
    size_t i = 0;
+
+   pthread_mutex_lock(&tqueue->queue_mutex);
    for(i = 0; i < tqueue->wait_count; i++)
       sem_post(&tqueue->data_semaphore);
+   pthread_mutex_unlock(&tqueue->queue_mutex);
+
+   while (tqueue->wait_count)
+     {
+        pthread_mutex_lock(&tqueue->queue_mutex);
+        pthread_mutex_unlock(&tqueue->queue_mutex);
+     }
 
    sem_destroy(&tqueue->data_semaphore);
    pthread_mutex_destroy(&tqueue->queue_mutex);
