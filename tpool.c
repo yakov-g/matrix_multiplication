@@ -12,11 +12,9 @@ struct _T_Task
 
 struct _T_Pool
 {
-   int _exit_thread;
-   pthread_mutex_t _mutex;
-   pthread_cond_t _cond_start;
+   int _pool_close;
    pthread_t *_thread_arr;
-   int _thread_num;
+   size_t _thread_num;
 
    TQueue *tasks;
 };
@@ -45,6 +43,7 @@ t_event_create(size_t counter)
    te->counter = counter;
 
    return te;
+
 bad_end:
    free(te);
    return NULL;
@@ -105,9 +104,7 @@ void
 t_pool_task_insert(T_Pool *tpool, const T_Task *task)
 {
    if (!tpool) return;
-   if (!task) return;
    tqueue_push(tpool->tasks, task);
-   pthread_cond_signal(&tpool->_cond_start);
 }
 
 static void *
@@ -116,25 +113,16 @@ _thread_func(void *arg)
    T_Pool *tpool = (T_Pool *) arg;
    while (1)
      {
-        T_Task *t = (T_Task *) tqueue_get(tpool->tasks);
-        if (t && t->task_func) t->task_func(t->data);
-
-        if (!t)
+        if (tpool->_pool_close)
           {
-             pthread_mutex_lock(&tpool->_mutex);
-             //printf("%d: Waiting for job!: %d\n", (int) arg, _finish_counter);
-             pthread_cond_wait(&tpool->_cond_start, &tpool->_mutex);
-             //printf("%d: let's go\n", (int) arg);
-             if (tpool->_exit_thread)
-               {
-                  //printf("%d: I'm thread! - Good bye!\n",(int) arg);
-                  pthread_mutex_unlock(&tpool->_mutex);
-                  pthread_exit(NULL);
-               }
-             pthread_mutex_unlock(&tpool->_mutex);
+             pthread_exit(NULL);
           }
-        //printf("I'm thread! - taking data\n");
-        //printf("I'm thread! - working\n");
+
+        T_Task *t = (T_Task *) tqueue_get(tpool->tasks);
+        if (t && t->task_func)
+          {
+             t->task_func(t->data);
+          }
      }
    pthread_exit(NULL);
 }
@@ -159,15 +147,6 @@ t_pool_create(int thread_num)
    if (!tpool->tasks)
       goto bad_end;
 
-   if (pthread_mutex_init(&tpool->_mutex, NULL))
-     {
-        goto bad_end;
-     }
-   if (pthread_cond_init(&tpool->_cond_start, NULL))
-     {
-        goto bad_end;
-     }
-
    size_t i = 0;
    for (i = 0; i < tpool->_thread_num; i++)
      {
@@ -188,21 +167,15 @@ t_pool_destroy(T_Pool *tpool)
 {
    if (!tpool) return 1;
 
-   pthread_mutex_lock(&tpool->_mutex);
-   pthread_cond_broadcast(&tpool->_cond_start);
-   tpool->_exit_thread = 1;
-   pthread_mutex_unlock(&tpool->_mutex);
+   tpool->_pool_close = 1;
+   tqueue_destroy(tpool->tasks);
 
-   int i = 0;
+   size_t i = 0;
    for (i = 0; i < tpool->_thread_num; i++)
      {
         pthread_join(tpool->_thread_arr[i], NULL);
      }
 
-   pthread_mutex_destroy(&tpool->_mutex);
-   pthread_cond_destroy(&tpool->_cond_start);
-
-   tqueue_destroy(tpool->tasks);
    free(tpool->_thread_arr);
    free(tpool);
    return 0;

@@ -7,6 +7,8 @@
 
 struct _TQueue
 {
+   size_t wait_count;
+   int close;
    pthread_mutex_t queue_mutex;
    sem_t data_semaphore;
    Queue *queue;
@@ -16,12 +18,11 @@ void
 tqueue_push(TQueue *tqueue, const void *data)
 {
    if (!tqueue) return;
-   if (!data) return;
    pthread_mutex_lock(&tqueue->queue_mutex);
    queue_push(tqueue->queue, data);
    pthread_mutex_unlock(&tqueue->queue_mutex);
 
-   //sem_post(&tqueue->data_semaphore);
+   sem_post(&tqueue->data_semaphore);
 }
 
 const void *
@@ -29,7 +30,10 @@ tqueue_get(TQueue *tqueue)
 {
    const void *ret = NULL;
    /*clean up threads stuk on sem_wait */
-   //sem_wait(&tqueue->data_semaphore);
+   tqueue->wait_count++;
+   sem_wait(&tqueue->data_semaphore);
+   if (tqueue->close) return NULL;
+   tqueue->wait_count--;
 
    pthread_mutex_lock(&tqueue->queue_mutex);
    ret = queue_peek(tqueue->queue);
@@ -73,6 +77,11 @@ void
 tqueue_destroy(TQueue *tqueue)
 {
    if (!tqueue) return;
+   tqueue->close = 1;
+   size_t i = 0;
+   for(i = 0; i < tqueue->wait_count; i++)
+      sem_post(&tqueue->data_semaphore);
+
    sem_destroy(&tqueue->data_semaphore);
    pthread_mutex_destroy(&tqueue->queue_mutex);
    queue_destroy(tqueue->queue);

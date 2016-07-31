@@ -32,7 +32,6 @@ void
 queue_push(Queue *queue, const void *data)
 {
    if (!queue) return;
-   if (!data) return;
    Queue_Node *node = _queue_node_create();
    node->data = data;
    if (!node) return;

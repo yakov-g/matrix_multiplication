@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wshadow -Wno-type-limits -g3 -O0 -Wpointer-arith -fvisibility=hidden
+CFLAGS = -Wall -Wextra -Wshadow -Wno-type-limits -g3 -O3 -Wpointer-arith -fvisibility=hidden
 
 LIBS = -lpthread
 SOURCES = main.c matrix.c matrix_thread.c queue.c tqueue.c tpool.c
