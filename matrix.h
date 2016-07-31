@@ -11,6 +11,9 @@ typedef struct
 Matrix *
 matrix_create(size_t lines, size_t columns);
 
+Matrix *
+matrix_random_create(size_t lines, size_t columns);
+
 Matrix*
 matrix_from_file_create(const char *filename);
 

@@ -108,8 +108,11 @@ main(int argc, char **argv)
      }
    T_Pool *tpool = t_pool_create(n_threads);
 
-   mt1 = matrix_from_file_create(filename1);
-   mt2 = matrix_from_file_create(filename2);
+   //mt1 = matrix_from_file_create(filename1);
+   //mt2 = matrix_from_file_create(filename2);
+
+   mt1 = matrix_random_create(1000, 1000);
+   mt2 = matrix_random_create(1000, 1000);
 
    if (!mt1 || !mt2)
       goto end;

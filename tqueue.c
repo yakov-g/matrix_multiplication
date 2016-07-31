@@ -30,12 +30,17 @@ tqueue_get(TQueue *tqueue)
 {
    const void *ret = NULL;
    /*clean up threads stuk on sem_wait */
-   tqueue->wait_count++;
-   sem_wait(&tqueue->data_semaphore);
-   if (tqueue->close) return NULL;
-   tqueue->wait_count--;
 
    pthread_mutex_lock(&tqueue->queue_mutex);
+   tqueue->wait_count++;
+   pthread_mutex_unlock(&tqueue->queue_mutex);
+
+   sem_wait(&tqueue->data_semaphore);
+   if (tqueue->close) return NULL;
+
+   pthread_mutex_lock(&tqueue->queue_mutex);
+   tqueue->wait_count--;
+
    ret = queue_peek(tqueue->queue);
    if (ret)
      {

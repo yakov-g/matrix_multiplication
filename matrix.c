@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "matrix.h"
 
@@ -27,6 +28,22 @@ matrix_create(size_t lines, size_t columns)
    mtr->lines = lines;
    mtr->columns = columns;
    mtr->data = malloc(lines * columns * sizeof(long long));
+   return mtr;
+}
+
+Matrix *
+matrix_random_create(size_t lines, size_t columns)
+{
+   Matrix *mtr = matrix_create(lines, columns);
+   if (!mtr) return NULL;
+
+   srand48(time(NULL));
+
+   size_t i;
+   for (i = 0; i < lines * columns; i++)
+     {
+        mtr->data[i] = (long long) lrand48();
+     }
    return mtr;
 }
 

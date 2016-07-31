@@ -168,13 +168,16 @@ t_pool_destroy(T_Pool *tpool)
    if (!tpool) return 1;
 
    tpool->_pool_close = 1;
+   printf("Close pool 0\n");
    tqueue_destroy(tpool->tasks);
 
    size_t i = 0;
+   printf("Close pool 1\n");
    for (i = 0; i < tpool->_thread_num; i++)
      {
         pthread_join(tpool->_thread_arr[i], NULL);
      }
+   printf("Close pool 2\n");
 
    free(tpool->_thread_arr);
    free(tpool);
