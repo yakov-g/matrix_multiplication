@@ -7,9 +7,9 @@
 #include "tpool.h"
 #include "helper.h"
 
-typedef struct _Mult_Data2 Mult_Data2;
+typedef struct _Mult_Data Mult_Data;
 
-struct _Mult_Data2
+struct _Mult_Data
 {
    const long long *v1;
    const long long *v2;
@@ -21,7 +21,7 @@ struct _Mult_Data2
    T_Task *task;
 };
 
-static Mult_Data2 *
+static Mult_Data *
 _mult_data_create2(const long long *v1, size_t v_size1,
                    const long long *v2, size_t v_size2,
                    size_t v_size,
@@ -30,7 +30,7 @@ _mult_data_create2(const long long *v1, size_t v_size1,
    if (unlikely(!v1 || !v_size1 ||
                 !v2 || !v_size2 || !v_size || !res_pointer)) return NULL;
 
-   Mult_Data2 *md = (Mult_Data2 *) malloc (sizeof(Mult_Data2));
+   Mult_Data *md = (Mult_Data *) malloc (sizeof(Mult_Data));
    md->v1 = v1;
    md->v_size1 = v_size1;
 
@@ -44,16 +44,16 @@ _mult_data_create2(const long long *v1, size_t v_size1,
 }
 
 static void
-_mult_data_destroy2(Mult_Data2 *md)
+_mult_data_destroy2(Mult_Data *md)
 {
    if (unlikely(!md)) return;
    free(md);
 }
 
 static void
-_vect_mult_task_func2(const void *data)
+_vect_mult_task_func(const void *data)
 {
-   Mult_Data2 *md = (Mult_Data2 *) data;
+   Mult_Data *md = (Mult_Data *) data;
    long long res;
    size_t k = md->v_size2 / md->v_size1;
    size_t i = 0;
@@ -117,9 +117,9 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
              v1 = mt1->data + i * v_size;
              v2 = mt2_trans->data;
 
-             Mult_Data2 *md = _mult_data_create2(v1, v_size, v2, m2_h1_size,
+             Mult_Data *md = _mult_data_create2(v1, v_size, v2, m2_h1_size,
                                                  v_size, res->data + i * res->columns, te);
-             T_Task *tt = t_task_create(_vect_mult_task_func2, md);
+             T_Task *tt = t_task_create(_vect_mult_task_func, md);
              md->task = tt;
              t_pool_task_insert(tpool, tt);
           }
@@ -130,9 +130,9 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
         v1 = mt1->data + i * v_size;
         v2 = mt2_trans->data + m2_h1_size;
 
-        Mult_Data2 *md = _mult_data_create2(v1, v_size, v2, m2_h2_size,
+        Mult_Data *md = _mult_data_create2(v1, v_size, v2, m2_h2_size,
                                             v_size, res->data + i * res->columns + m2_h1_ln, te);
-        T_Task *tt = t_task_create(_vect_mult_task_func2, md);
+        T_Task *tt = t_task_create(_vect_mult_task_func, md);
         md->task = tt;
         t_pool_task_insert(tpool, tt);
      }
