@@ -7,32 +7,21 @@
 #include "matrix.h"
 #include "helper.h"
 
-void
-matrix_print(Matrix *mt)
-{
-   if (!mt) return;
-   size_t i = 0, j = 0;
-   for (i = 0; i < mt->lines; i++)
-     {
-        for (j = 0; j < mt->columns; j++)
-          {
-             printf("%lld ", mt->data[mt->columns * i + j]);
-          }
-        printf("\n");
-     }
-}
-
+/* Create matrix of (lines x columns) size.
+ * Returns: Matrix* on success, NULL on fail. */
 Matrix *
 matrix_create(size_t lines, size_t columns)
 {
    if (lines <= 0 || columns <= 0) return NULL;
-   Matrix *mtr = (Matrix *) malloc(sizeof(Matrix));
-   mtr->lines = lines;
-   mtr->columns = columns;
-   mtr->data = malloc(lines * columns * sizeof(long long));
-   return mtr;
+   Matrix *mt = (Matrix *) malloc(sizeof(Matrix));
+   mt->lines = lines;
+   mt->columns = columns;
+   mt->data = (long long *) malloc(lines * columns * sizeof(long long));
+   return mt;
 }
 
+/* Create randomly filled matrix of (lines x columns) size .
+ * Returns: Matrix* on success, NULL on fail. */
 Matrix *
 matrix_random_create(size_t lines, size_t columns)
 {
@@ -49,6 +38,8 @@ matrix_random_create(size_t lines, size_t columns)
    return mtr;
 }
 
+/* Create matrix with data filled from file.
+ * Returns: Matrix* on success, NULL on fail. */
 Matrix *
 matrix_from_file_create(const char *filename)
 {
@@ -86,7 +77,7 @@ matrix_from_file_create(const char *filename)
 end:
    if (scan_count != m * n)
      {
-        matrix_delete(mt);
+        matrix_destroy(mt);
         mt = NULL;
         printf("Wrong number of elements\n");
      }
@@ -94,6 +85,8 @@ end:
    return mt;
 }
 
+/* Save matrix in file.
+ * Returns: 0 on success, -1 on fail. */
 int
 matrix_to_file_save(const Matrix *mt, const char *filename)
 {
@@ -110,18 +103,24 @@ matrix_to_file_save(const Matrix *mt, const char *filename)
         return -1;
      }
 
-   res = fprintf(f, "%du %du\n", mt->lines, mt->columns);
+   res = fprintf(f, "%u %u\n", mt->lines, mt->columns);
    if (res < 0)
      {
-        goto end;
         ret = -1;
+        goto end;
      }
 
    for (i = 0; i < mt->lines; i++)
      {
         for (j = 0; j < mt->columns; j++)
           {
+             res = fprintf(f, "%lld ", mt->data[i * mt->columns + j]);
+             if (res < 0)
+                goto end;
           }
+        res = fprintf(f, "\n");
+        if (res < 0)
+           goto end;
      }
 
 end:
@@ -129,11 +128,14 @@ end:
    return ret;
 }
 
+/* Transponses matrix. New matrix will be returned.
+ * Returns: Matrix* on success, NULL on fail. */
 Matrix *
 matrix_transponse(const Matrix *mt)
 {
    if (!mt) return NULL;
    Matrix *mt_trans = matrix_create(mt->columns, mt->lines);
+   if (!mt_trans) return NULL;
    size_t i, j;
    for (i = 0; i < mt->lines; i++)
      {
@@ -145,6 +147,9 @@ matrix_transponse(const Matrix *mt)
    return mt_trans;
 }
 
+/* Matrix multiplication function.
+ * Through transposed mt2. New matrix will be returned.
+ * Returns: Matrix* on success, NULL on fail. */
 Matrix *
 matrix_mult(const Matrix *mt1, const Matrix *mt2)
 {
@@ -173,10 +178,13 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
                 vectors_multiply(v1, v2, v_size);
           }
      }
-   matrix_delete(mt2_trans);
+   matrix_destroy(mt2_trans);
    return res;
 }
 
+/* Matrix multiplication function.
+ * Without transposing mt2. New matrix will be returned.
+ * Returns: Matrix* on success, NULL on fail. */
 Matrix *
 matrix_no_transpose_mult(const Matrix *mt1, const Matrix *mt2)
 {
@@ -207,6 +215,8 @@ matrix_no_transpose_mult(const Matrix *mt1, const Matrix *mt2)
    return res;
 }
 
+/* Matrix compare function.
+ * Returns: 0 - if matrixes are equal, 1 - if not equal. */
 unsigned int
 matrix_cmp(const Matrix *mt1, const Matrix *mt2)
 {
@@ -217,14 +227,17 @@ matrix_cmp(const Matrix *mt1, const Matrix *mt2)
    return !!memcmp(mt1->data, mt2->data, mt1->lines * mt1->columns * sizeof(long long));
 }
 
+/* Destroy matrix object. */
 void
-matrix_delete(Matrix *mt)
+matrix_destroy(Matrix *mt)
 {
    if(!mt) return;
    if (mt->data) free(mt->data);
    free(mt);
 }
 
+/* Multiply two vectors of size.
+ * Returns: result of multiplication. */
 long long
 vectors_multiply(const long long *v1, const long long *v2, size_t size)
 {
@@ -235,7 +248,7 @@ vectors_multiply(const long long *v1, const long long *v2, size_t size)
         printf("v1 or v2 is null: %p %p\n", v1, v2);
         return 0;
      }
-  /* this optimization does not help with compiler option -O3 */
+  /* This optimization does not help with compiler option -O3 */
   if (likely(size > 7))
     {
        for (i = 0; i <= size - 8; i+= 8)
@@ -255,4 +268,20 @@ vectors_multiply(const long long *v1, const long long *v2, size_t size)
        ret = ret + (*v1++) * (*v2++);
     }
   return ret;
+}
+
+/* Print matrix line by line. */
+void
+matrix_print(Matrix *mt)
+{
+   if (!mt) return;
+   size_t i = 0, j = 0;
+   for (i = 0; i < mt->lines; i++)
+     {
+        for (j = 0; j < mt->columns; j++)
+          {
+             printf("%lld ", mt->data[mt->columns * i + j]);
+          }
+        printf("\n");
+     }
 }

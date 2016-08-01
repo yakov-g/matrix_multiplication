@@ -13,6 +13,7 @@
 #include "matrix.h"
 #include "matrix_thread.h"
 #include "tpool.h"
+#include "tevent.h"
 #include "helper.h"
 
 typedef struct _Mult_Data Mult_Data;
@@ -148,6 +149,6 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
    t_event_wait(te);
 
    t_event_destroy(te);
-   matrix_delete(mt2_trans);
+   matrix_destroy(mt2_trans);
    return res;
 }

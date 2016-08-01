@@ -2,16 +2,16 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wshadow -Wno-type-limits -g3 -O3 -Wpointer-arith -fvisibility=hidden
 
 LIBS = -lpthread
-SOURCES = main.c matrix.c matrix_thread.c queue.c tqueue.c tpool.c
+SOURCES = main.c matrix.c matrix_thread.c queue.c tqueue.c tpool.c tevent.c ttask.c
 OBJECTS=$(SOURCES:.c=.o)
 
 EXECUTABLE = matrix_multiply mm 
 
-#.o : .c
+#.o : .c $(HEADERS)
 #	$(CC) $(CFLAGS) –c -o $@ $<
 
 #%.o : %.c
-#	$(CC) $(CFLAGS) –c -o $@ $<
+#	$(CC) -c $(CFLAGS) -o $@ $<
 
 all: $(EXECUTABLE)     
 

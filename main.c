@@ -9,8 +9,9 @@
 #include "matrix.h"
 #include "matrix_thread.h"
 
-/* Helper function which checks if path exists and
- * resolves realpath.
+/* Helper function which checks if path exists
+ * and is a file.
+ * If condition met - resolves realpath.
  * Returns newly allocated string - must be freed. */
 static char *
 _realpath_get(const char *input_path)
@@ -26,8 +27,16 @@ _realpath_get(const char *input_path)
         if (S_ISREG(st.st_mode))
            ret = realpath(input_path, NULL);
      }
-
    return ret;
+}
+
+/* Helper function to chec if path exists. */
+static int
+_is_path_exist(const char *input_path)
+{
+   struct stat st;
+   if (!input_path) return 0;
+   return !stat(input_path, &st);
 }
 
 int
@@ -101,6 +110,12 @@ main(int argc, char **argv)
         goto end;
      }
 
+   if (path_output && _is_path_exist(path_output))
+     {
+        printf("Output file already exists\n");
+        goto end;
+     }
+
    if (n_threads < 0)
      {
         printf("Error: --threads parameter is < 0\n");
@@ -109,9 +124,6 @@ main(int argc, char **argv)
 
    mt1 = matrix_from_file_create(filename1);
    mt2 = matrix_from_file_create(filename2);
-
-   //mt1 = matrix_random_create(3000, 3000);
-   //mt2 = matrix_random_create(3000, 3000);
 
    if (!mt1 || !mt2)
       goto end;
@@ -125,7 +137,7 @@ main(int argc, char **argv)
    mult1 = matrix_mult(mt1, mt2);
    clock_gettime(clock_type, &end);
    if (mult1)
-      printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start),
+      printf("Time: %ld - %ld = %ld\n", SEC(end), SEC(start),
          SEC(end) - SEC(start));
 //#endif
 
@@ -135,21 +147,26 @@ main(int argc, char **argv)
    mult2 = matrix_mult_thread(tpool, mt1, mt2);
    clock_gettime(clock_type, &end);
    if (mult2)
-      printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
+      printf("Time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
 //#endif
 
    printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult1, mult2));
 #undef SEC
+   if (mult2)
+     {
+        printf("Output path: %s\n", path_output);
+        matrix_to_file_save(mult2, path_output);
+     }
 
-   matrix_delete(mult1);
-   matrix_delete(mult2);
+   matrix_destroy(mult1);
+   matrix_destroy(mult2);
    t_pool_run(tpool);
    t_pool_destroy(tpool);
 
 end:
    if (filename1) free(filename1);
    if (filename2) free(filename2);
-   if (mt1) matrix_delete(mt1);
-   if (mt2) matrix_delete(mt2);
+   if (mt1) matrix_destroy(mt1);
+   if (mt2) matrix_destroy(mt2);
    return 0;
 }

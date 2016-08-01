@@ -2,15 +2,11 @@
 #include <pthread.h>
 
 #include "tpool.h"
+#include "ttask.h"
 #include "queue.h"
 #include "tqueue.h"
 #include "helper.h"
 
-struct _T_Task
-{
-   void (*task_func) (const void *data);
-   const void *data;
-};
 
 typedef struct
 {
@@ -31,87 +27,6 @@ struct _T_Pool
 
    TQueue *tasks;
 };
-
-struct _T_Event
-{
-   size_t counter;
-   pthread_mutex_t _event_mutex;
-   pthread_cond_t _event_cond;
-};
-
-T_Event *
-t_event_create(size_t counter)
-{
-   T_Event *te = (T_Event *) malloc(sizeof(T_Event));
-   if (!te) return NULL;
-
-   if (pthread_mutex_init(&te->_event_mutex, NULL))
-     {
-        goto bad_end;
-     }
-   if (pthread_cond_init(&te->_event_cond, NULL))
-     {
-        goto bad_end;
-     }
-   te->counter = counter;
-
-   return te;
-
-bad_end:
-   free(te);
-   return NULL;
-}
-
-void
-t_event_destroy(T_Event *te)
-{
-   if (!te) return;
-   pthread_mutex_destroy(&te->_event_mutex);
-   pthread_cond_destroy(&te->_event_cond);
-   free(te);
-}
-
-void
-t_event_wait(T_Event *te)
-{
-   if (!te) return;
-   pthread_mutex_lock(&te->_event_mutex);
-   while (te->counter)
-     {
-        pthread_cond_wait(&te->_event_cond, &te->_event_mutex);
-     }
-   pthread_mutex_unlock(&te->_event_mutex);
-}
-
-void
-t_event_dec(T_Event *te)
-{
-   if (unlikely(!te)) return;
-   pthread_mutex_lock(&te->_event_mutex);
-   if (unlikely(--te->counter == 0))
-     {
-        pthread_cond_broadcast(&te->_event_cond);
-     }
-   pthread_mutex_unlock(&te->_event_mutex);
-}
-
-T_Task *
-t_task_create(void (*task_func)(const void *data), const void *data)
-{
-   if (unlikely(!task_func)) return NULL;
-   T_Task *tt = (T_Task *) calloc (1, sizeof(T_Task));
-   if (unlikely(!tt)) return NULL;
-   tt->task_func = task_func;
-   tt->data = data;
-   return tt;
-}
-
-void
-t_task_destroy(T_Task *t_task)
-{
-   if (unlikely(!t_task)) return;
-   free(t_task);
-}
 
 void
 t_pool_task_insert(T_Pool *tpool, const T_Task *task)
@@ -139,9 +54,11 @@ _thread_func(void *arg)
           }
 
         T_Task *t = (T_Task *) tqueue_get(td->tpool->tasks);
-        if (likely(t && t->task_func))
+        if (likely(t))
           {
-             t->task_func(t->data);
+             task_func tf = t_task_func_get(t);
+             const void *data = t_task_data_get(t);
+             tf(data);
           }
      }
    pthread_exit(NULL);
@@ -193,7 +110,7 @@ bad_end:
 }
 
 size_t
-tpool_thread_count_get(const T_Pool *tpool)
+t_pool_thread_count_get(const T_Pool *tpool)
 {
    if (!tpool) return 0;
    return tpool->_thread_num;

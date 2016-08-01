@@ -1,26 +1,33 @@
 #include <stdlib.h>
 #include "queue.h"
 
+/* Queue data structure.
+ * Implemented as singly linked list. */
 
 typedef struct _Queue_Node Queue_Node;
+
+/* Queue Node strucutre declaration */
 struct _Queue_Node
 {
    Queue_Node *next;
    const void *data;
 };
 
+/* Queue structure declaration */
 struct _Queue
 {
    Queue_Node *head;
    Queue_Node *tail;
 };
 
+/* Helper to create queue node */
 static Queue_Node*
 _queue_node_create()
 {
    return calloc (1, sizeof(Queue_Node));
 }
 
+/* Helper to destroy queue node */
 static void
 _queue_node_destroy(Queue_Node *node)
 {
@@ -28,6 +35,26 @@ _queue_node_destroy(Queue_Node *node)
    free(node);
 }
 
+/* Create queue. */
+Queue *
+queue_create()
+{
+   return calloc(1, sizeof(Queue));
+}
+
+/* Destroy queue. */
+void
+queue_destroy(Queue *queue)
+{
+   if (!queue) return;
+   while (queue->head)
+     {
+        queue_pop(queue);
+     }
+   free(queue);
+}
+
+/* Push data to queue. NULL data allowed. */
 void
 queue_push(Queue *queue, const void *data)
 {
@@ -47,6 +74,7 @@ queue_push(Queue *queue, const void *data)
    queue->tail = node;
 }
 
+/* Pop data from queue. */
 void
 queue_pop(Queue *queue)
 {
@@ -62,6 +90,7 @@ queue_pop(Queue *queue)
      }
 }
 
+/* Take top data from queue. */
 const void *
 queue_peek(const Queue *queue)
 {
@@ -70,19 +99,3 @@ queue_peek(const Queue *queue)
    return queue->head->data;
 }
 
-Queue *
-queue_create()
-{
-   return calloc(1, sizeof(Queue));
-}
-
-void
-queue_destroy(Queue *queue)
-{
-   if (!queue) return;
-   while (queue->head)
-     {
-        queue_pop(queue);
-     }
-   free(queue);
-}
