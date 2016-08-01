@@ -106,7 +106,6 @@ main(int argc, char **argv)
         printf("Error: --threads parameter is < 0\n");
         goto end;
      }
-   T_Pool *tpool = t_pool_create(n_threads, 1);
 
    //mt1 = matrix_from_file_create(filename1);
    //mt2 = matrix_from_file_create(filename2);
@@ -135,6 +134,7 @@ main(int argc, char **argv)
    printf("full time: %ld\n", (end - start) / CLOCKS_PER_SEC);
 //#endif
 
+   T_Pool *tpool = t_pool_create(n_threads, 1);
 //#if 0
    start = clock();
    Matrix *mult3 = matrix_mult_thread(tpool, mt1, mt2);
