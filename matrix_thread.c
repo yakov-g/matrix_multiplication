@@ -1,3 +1,10 @@
+/*
+ * Threaded matrix multiplication implementation.
+ *
+ * This is implemented with tasks creation for threads.
+ *
+ * */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,20 +16,22 @@
 
 typedef struct _Mult_Data Mult_Data;
 
+/* Struct to keep data for task */
 struct _Mult_Data
 {
-   const long long *v1;
-   const long long *v2;
-   size_t v_size1;
+   const long long *v1; /* Ptr to 1st mem region. */
+   const long long *v2; /* Ptr to 2nd mem region. */
+   size_t v_size1; /* Sizes of memory regions. */
    size_t v_size2;
-   size_t v_size;
-   long long *result_pointer;
-   T_Event *te;
-   T_Task *task;
+   size_t v_size; /* Size of vector to muliplicatei. */
+   long long *result_pointer; /* Pointer to mem region where to put result. */
+   T_Event *te; /* Pointer to T_Event counter. */
+   T_Task *task; /* Pointer to current task */
 };
 
+/* Helper to create and initialize task data structure */
 static Mult_Data *
-_mult_data_create2(const long long *v1, size_t v_size1,
+_mult_data_create(const long long *v1, size_t v_size1,
                    const long long *v2, size_t v_size2,
                    size_t v_size,
                    long long *res_pointer, T_Event *te)
@@ -44,7 +53,7 @@ _mult_data_create2(const long long *v1, size_t v_size1,
 }
 
 static void
-_mult_data_destroy2(Mult_Data *md)
+_mult_data_destroy(Mult_Data *md)
 {
    if (unlikely(!md)) return;
    free(md);
@@ -55,7 +64,7 @@ _vect_mult_task_func(const void *data)
 {
    Mult_Data *md = (Mult_Data *) data;
    long long res;
-   size_t k = md->v_size2 / md->v_size1;
+   size_t k = md->v_size2 / md->v_size;
    size_t i = 0;
 
    long long *v2_p = (long long *) md->v2;
@@ -70,7 +79,7 @@ _vect_mult_task_func(const void *data)
 
    t_event_dec(md->te);
    t_task_destroy(md->task);
-   _mult_data_destroy2(md);
+   _mult_data_destroy(md);
 }
 
 Matrix *
@@ -100,13 +109,14 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
    const long long *v1 = NULL, *v2 = NULL;
    size_t v_size = mt1->columns;
 
-   /* number of columns in each half of second matrix,
-    * the same as lines in m2 trans */
+   /* number of columns (lines in transposed)
+    * in each half of 2nd matrix */
    size_t m2_h1_ln = mt2_trans->lines / 2;
    size_t m2_h2_ln = mt2_trans->lines / 2 + mt2_trans->lines % 2;
 
-   /* 1st half 2nd matrix size */
+   /* Size of 1st half of 2nd matrix */
    size_t m2_h1_size = m2_h1_ln * mt2_trans->columns;
+   /* Size of 2nd half of 2nd matrix */
    size_t m2_h2_size = m2_h2_ln * mt2_trans->columns;
 
    T_Event *te = t_event_create(mt1->lines * (mt2_trans->lines == 1 ? 1 : 2));
@@ -117,7 +127,7 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
              v1 = mt1->data + i * v_size;
              v2 = mt2_trans->data;
 
-             Mult_Data *md = _mult_data_create2(v1, v_size, v2, m2_h1_size,
+             Mult_Data *md = _mult_data_create(v1, v_size, v2, m2_h1_size,
                                                  v_size, res->data + i * res->columns, te);
              T_Task *tt = t_task_create(_vect_mult_task_func, md);
              md->task = tt;
@@ -130,7 +140,7 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
         v1 = mt1->data + i * v_size;
         v2 = mt2_trans->data + m2_h1_size;
 
-        Mult_Data *md = _mult_data_create2(v1, v_size, v2, m2_h2_size,
+        Mult_Data *md = _mult_data_create(v1, v_size, v2, m2_h2_size,
                                             v_size, res->data + i * res->columns + m2_h1_ln, te);
         T_Task *tt = t_task_create(_vect_mult_task_func, md);
         md->task = tt;
