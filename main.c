@@ -35,7 +35,7 @@ main(int argc, char **argv)
 {
    const char *path_input1 = NULL, *path_input2 = NULL, *path_output = NULL;
    int n_threads = -1;
-   clock_t start, end;
+   struct timespec start, end;
    Matrix *mt1 = NULL, *mt2 = NULL;
 
    char *filename1 = NULL, *filename2 = NULL;
@@ -110,8 +110,8 @@ main(int argc, char **argv)
    //mt1 = matrix_from_file_create(filename1);
    //mt2 = matrix_from_file_create(filename2);
 
-   mt1 = matrix_random_create(1000, 1000);
-   mt2 = matrix_random_create(1000, 1000);
+   mt1 = matrix_random_create(3000, 3000);
+   mt2 = matrix_random_create(3000, 3000);
 
    if (!mt1 || !mt2)
       goto end;
@@ -124,28 +124,30 @@ main(int argc, char **argv)
    printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
 #endif
 
+#define SEC(x) (x.tv_sec)
    Matrix *mult = NULL;
+   clockid_t clock_type = CLOCK_MONOTONIC_RAW;
 
 //#if 0
-   start = clock();
+   clock_gettime(clock_type, &start);
    mult = matrix_mult(mt1, mt2);
-   end = clock();
-   printf("Full time: %ld - %ld = %ld\n", end, start, end - start);
-   printf("full time: %ld\n", (end - start) / CLOCKS_PER_SEC);
+   clock_gettime(clock_type, &end);
+   printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start),
+         SEC(end) - SEC(start));
 //#endif
 
    T_Pool *tpool = t_pool_create(n_threads, 1);
 //#if 0
-   start = clock();
+   clock_gettime(clock_type, &start);
    Matrix *mult3 = matrix_mult_thread(tpool, mt1, mt2);
-   end = clock();
-   printf("Full time: %ld - %ld = %ld\n", end, start, end - start);
-   printf("Full time: %ld\n", (end - start) / CLOCKS_PER_SEC);
+   clock_gettime(clock_type, &end);
+   printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
 //#endif
 
    //printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult1, mult2));
    printf("Matrix cmp 2-3: %d\n", matrix_cmp(mult, mult3));
 
+#undef SEC
 
 
    matrix_delete(mult);

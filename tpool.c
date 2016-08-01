@@ -142,7 +142,6 @@ _thread_func(void *arg)
         if (likely(t && t->task_func))
           {
              t->task_func(t->data);
-             td->count++;
           }
      }
    pthread_exit(NULL);
@@ -222,7 +221,6 @@ t_pool_destroy(T_Pool *tpool)
    for (i = 0; i < tpool->_thread_num; i++)
      {
         pthread_join(tpool->_thread_arr[i].thread, NULL);
-        printf("count: %zu\n", tpool->_thread_arr[i].count);
      }
 
    pthread_mutex_destroy(&tpool->_thread_start_mutex);

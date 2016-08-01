@@ -99,11 +99,7 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
    Matrix *res = matrix_create(mt1->lines, mt2->columns);
    if (!res) return NULL;
 
-   clock_t start, end;
-   start = clock();
    Matrix *mt2_trans = matrix_transponse(mt2);
-   end = clock();
-   printf("Trans Time: %ld - %ld = %ld\n", end, start, end - start);
 
    size_t i;
    const long long *v1 = NULL, *v2 = NULL;
@@ -147,11 +143,8 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
         t_pool_task_insert(tpool, tt);
      }
 
-   start = clock();
    t_pool_run(tpool);
    t_event_wait(te);
-   end = clock();
-   printf("Mult Time: %ld - %ld = %ld\n", end, start, end - start);
 
    t_event_destroy(te);
    matrix_delete(mt2_trans);

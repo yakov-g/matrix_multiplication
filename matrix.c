@@ -129,14 +129,8 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
 
    Matrix *res = matrix_create(mt1->lines, mt2->columns);
 
-   clock_t start, end;
-   start = clock();
    Matrix *mt2_trans = matrix_transponse(mt2);
-   end = clock();
-   printf("Trans Time: %ld - %ld = %ld\n", end, start, end - start);
 
-
-   start = clock();
    size_t i, j;
    const long long *v1 = NULL, *v2 = NULL;
    size_t v_size = mt1->columns;
@@ -151,8 +145,6 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
                 vectors_multiply(v1, v2, v_size);
           }
      }
-   end = clock();
-   printf("Mult Time: %ld - %ld = %ld\n", end, start, end - start);
    matrix_delete(mt2_trans);
    return res;
 }
