@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "matrix_internal.h"
 #include "matrix.h"
 #include "helper.h"
 
@@ -74,14 +75,6 @@ matrix_from_file_create(const char *filename)
    if (!mt) goto end;
    for (i = 0; i < n; i++)
      {
-#if 0
-        char *str = NULL;
-        size_t n = 0;
-        getline(&str, &n, f);
-        printf(":%s", str);
-        free(str);
-        str = NULL;
-#endif
         for (j = 0; j < m; j++)
           {
              res = fscanf(f, "%lld", &mt->data[m * i + j]);
@@ -99,6 +92,41 @@ end:
      }
    fclose(f);
    return mt;
+}
+
+int
+matrix_to_file_save(const Matrix *mt, const char *filename)
+{
+   if (!mt) return -1;
+   if (!filename) return -1;
+
+   size_t i = 0, j = 0;
+   int ret = 0, res;
+   FILE *f = fopen(filename, "w+");
+
+   if (!f)
+     {
+        printf("Can not open file: \"%s\".\n", filename);
+        return -1;
+     }
+
+   res = fprintf(f, "%du %du\n", mt->lines, mt->columns);
+   if (res < 0)
+     {
+        goto end;
+        ret = -1;
+     }
+
+   for (i = 0; i < mt->lines; i++)
+     {
+        for (j = 0; j < mt->columns; j++)
+          {
+          }
+     }
+
+end:
+   fclose(f);
+   return ret;
 }
 
 Matrix *
@@ -123,7 +151,7 @@ matrix_mult(const Matrix *mt1, const Matrix *mt2)
    if (!mt1 || !mt2) return NULL;
    if (mt1->columns != mt2->lines)
      {
-        printf("Matrixes can not be multiplicated");
+        printf("Matrixes can not be multiplicated\n");
         return NULL;
      }
 

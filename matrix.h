@@ -1,12 +1,7 @@
 #ifndef _MATRIX_H_
 #define _MATRIX_H_
 
-typedef struct
-{
-   unsigned int lines;
-   unsigned int columns;
-   long long *data;
-} Matrix;
+typedef struct _Matrix Matrix;
 
 Matrix *
 matrix_create(size_t lines, size_t columns);

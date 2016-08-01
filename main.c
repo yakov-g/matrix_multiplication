@@ -107,52 +107,43 @@ main(int argc, char **argv)
         goto end;
      }
 
-   //mt1 = matrix_from_file_create(filename1);
-   //mt2 = matrix_from_file_create(filename2);
+   mt1 = matrix_from_file_create(filename1);
+   mt2 = matrix_from_file_create(filename2);
 
-   mt1 = matrix_random_create(3000, 3000);
-   mt2 = matrix_random_create(3000, 3000);
+   //mt1 = matrix_random_create(3000, 3000);
+   //mt2 = matrix_random_create(3000, 3000);
 
    if (!mt1 || !mt2)
       goto end;
 
-#if 0
-   start = clock();
-   Matrix *mult2 = matrix_no_transpose_mult(mt1, mt2);
-   end = clock();
-   printf("Time: %ld - %ld = %ld\n", end, start, end - start);
-   printf("Time: %ld\n", (end - start)/CLOCKS_PER_SEC);
-#endif
-
 #define SEC(x) (x.tv_sec)
-   Matrix *mult = NULL;
+   Matrix *mult1, *mult2 = NULL;
    clockid_t clock_type = CLOCK_MONOTONIC_RAW;
 
 //#if 0
    clock_gettime(clock_type, &start);
-   mult = matrix_mult(mt1, mt2);
+   mult1 = matrix_mult(mt1, mt2);
    clock_gettime(clock_type, &end);
-   printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start),
+   if (mult1)
+      printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start),
          SEC(end) - SEC(start));
 //#endif
 
    T_Pool *tpool = t_pool_create(n_threads, 1);
 //#if 0
    clock_gettime(clock_type, &start);
-   Matrix *mult3 = matrix_mult_thread(tpool, mt1, mt2);
+   mult2 = matrix_mult_thread(tpool, mt1, mt2);
    clock_gettime(clock_type, &end);
-   printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
+   if (mult2)
+      printf("Full time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
 //#endif
 
-   //printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult1, mult2));
-   printf("Matrix cmp 2-3: %d\n", matrix_cmp(mult, mult3));
-
+   printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult1, mult2));
 #undef SEC
 
-
-   matrix_delete(mult);
-   matrix_delete(mult3);
-   //matrix_delete(mult2);
+   matrix_delete(mult1);
+   matrix_delete(mult2);
+   t_pool_run(tpool);
    t_pool_destroy(tpool);
 
 end:

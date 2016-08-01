@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "matrix_internal.h"
 #include "matrix.h"
 #include "matrix_thread.h"
 #include "tpool.h"
@@ -92,7 +93,7 @@ matrix_mult_thread(T_Pool *tpool, const Matrix *mt1, const Matrix *mt2)
    if (!mt1 || !mt2) return NULL;
    if (mt1->columns != mt2->lines)
      {
-        printf("Matrixes can not be multiplicated");
+        printf("Matrixes can not be multiplicated\n");
         return NULL;
      }
 
