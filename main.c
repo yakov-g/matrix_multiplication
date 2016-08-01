@@ -45,9 +45,10 @@ main(int argc, char **argv)
    const char *path_input1 = NULL, *path_input2 = NULL, *path_output = NULL;
    int n_threads = -1;
    struct timespec start, end;
-   Matrix *mt1 = NULL, *mt2 = NULL;
+   Matrix *mt1 = NULL, *mt2 = NULL, *mult = NULL;
 
    char *filename1 = NULL, *filename2 = NULL;
+   int help = 0;
    static struct option long_options[] =
      {
           {"input1", required_argument, 0, '1'},
@@ -86,13 +87,31 @@ main(int argc, char **argv)
                    }
            default:
                    {
+                      help = 1;
                    }
           }
      };
 
    if (!path_input1 || !path_input2)
      {
-        printf("check usage\n");
+        help = 1;
+     }
+
+   if (n_threads <= 0)
+     {
+        printf("Error: --threads parameter is < 0\n");
+        help = 1;
+     }
+
+   if (help)
+     {
+        printf("Usage: %s --input1 file1 --input2 file2 -t N [-h/--help] [-o OUTFILE]\n", argv[0]);
+        printf("       --help/-h Print this help.\n");
+        printf("       --input1 Provide 1st input filename.\n");
+        printf("       --input2 Provide 2nd input filename.\n");
+        printf("       --output/-o Provide output filename.\n");
+        printf("       --threads/-t Provide number of threads\n");
+        printf("\n");
         goto end;
      }
 
@@ -116,12 +135,6 @@ main(int argc, char **argv)
         goto end;
      }
 
-   if (n_threads < 0)
-     {
-        printf("Error: --threads parameter is < 0\n");
-        goto end;
-     }
-
    mt1 = matrix_from_file_create(filename1);
    mt2 = matrix_from_file_create(filename2);
 
@@ -129,37 +142,27 @@ main(int argc, char **argv)
       goto end;
 
 #define SEC(x) (x.tv_sec)
-   Matrix *mult1, *mult2 = NULL;
+
    clockid_t clock_type = CLOCK_MONOTONIC_RAW;
 
-//#if 0
-   clock_gettime(clock_type, &start);
-   mult1 = matrix_mult(mt1, mt2);
-   clock_gettime(clock_type, &end);
-   if (mult1)
-      printf("Time: %ld - %ld = %ld\n", SEC(end), SEC(start),
-         SEC(end) - SEC(start));
-//#endif
-
+   /* Create locked thread pool.
+    * Pool need to be run when tasks are ready. */
    T_Pool *tpool = t_pool_create(n_threads, 1);
-//#if 0
-   clock_gettime(clock_type, &start);
-   mult2 = matrix_mult_thread(tpool, mt1, mt2);
-   clock_gettime(clock_type, &end);
-   if (mult2)
-      printf("Time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
-//#endif
 
-   printf("Matrix cmp 1-2: %d\n", matrix_cmp(mult1, mult2));
+   clock_gettime(clock_type, &start);
+   mult = matrix_mult_thread(tpool, mt1, mt2);
+   clock_gettime(clock_type, &end);
+   if (mult)
+      printf("Time: %ld - %ld = %ld\n", SEC(end), SEC(start), SEC(end) - SEC(start));
+
 #undef SEC
-   if (mult2)
+
+   if (mult)
      {
         printf("Output path: %s\n", path_output);
-        matrix_to_file_save(mult2, path_output);
+        matrix_to_file_save(mult, path_output);
      }
 
-   matrix_destroy(mult1);
-   matrix_destroy(mult2);
    t_pool_run(tpool);
    t_pool_destroy(tpool);
 
@@ -168,5 +171,6 @@ end:
    if (filename2) free(filename2);
    if (mt1) matrix_destroy(mt1);
    if (mt2) matrix_destroy(mt2);
+   if (mult) matrix_destroy(mult);
    return 0;
 }
